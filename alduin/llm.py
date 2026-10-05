@@ -6,7 +6,7 @@ from rich.status import Status
 
 from alduin import ui
 
-MODEL = "claude-sonnet-4-5"
+MODEL = "qwen3:4b"
 MAX_TOKENS = 8096
 
 
