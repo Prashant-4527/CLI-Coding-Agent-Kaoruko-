@@ -44,13 +44,15 @@ def agent_loop(client: anthropic.Anthropic, console: Console) -> None:
             tool_schemas=[],     
         )
 
+        
+
         for block in llm_response.content:
             if block.type == "text":    
                 ui.print_assistant_reply(
                     console=console,
                     text=block.text,           
                     input_tokens=llm_response.usage.input_tokens,
-                    output_tokens=llm_response.usage.output.tokens
+                    output_tokens=llm_response.usage.output_tokens
                 )
 
 def main() -> None:
