@@ -8,7 +8,8 @@ import dotenv
 from rich.console import Console
 
 from alduin import theme, ui, llm, system_prompt
-
+import tool
+import schema_converter
 
 def agent_loop(client: anthropic.Anthropic, console: Console) -> None:
     """Run the main agent loop: read input, call LLM, execute tools, repeat.
@@ -19,6 +20,9 @@ def agent_loop(client: anthropic.Anthropic, console: Console) -> None:
     """
 
     conversation: list[dict[str, Any]] = []
+
+    active_tools = [tool.read_file]
+    tool_schemas = schema_converter.generate_tool_schema(active_tools)
 
     while True:
         try:
@@ -41,9 +45,10 @@ def agent_loop(client: anthropic.Anthropic, console: Console) -> None:
             console=console,
             system_prompt=system_prompt.get(),    
             messages=conversation,         
-            tool_schemas=[],     
+            tool_schemas=tool_schemas,     
         )
 
+        conversation.append({"role": "assistant", "content": llm_response.content})
         
 
         for block in llm_response.content:
@@ -53,6 +58,11 @@ def agent_loop(client: anthropic.Anthropic, console: Console) -> None:
                     text=block.text,           
                     input_tokens=llm_response.usage.input_tokens,
                     output_tokens=llm_response.usage.output_tokens
+                )
+            elif block.type == "tool_use":
+                print(
+                    f"Tool use request for tool: {block.name}"
+                    f"with args: {block.input}"
                 )
 
 def main() -> None:

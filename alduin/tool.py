@@ -13,7 +13,14 @@ def read_file(path: str) -> str:
         The contents of the file, or an error message if it fails.
     """
 
-    pass
+    file_path = Path(path)
+
+    if not file_path.is_file():
+        return f"Error: File not found: {path}"
+
+    return file_path.read_text(encoding="utf-8")
+
+    
 
 
 def edit_file(path: str, old_str: str, new_str: str) -> str:
