@@ -7,9 +7,35 @@ import anthropic
 import dotenv
 from rich.console import Console
 
-from alduin import theme, ui, llm, system_prompt
-import tool
-import schema_converter
+from alduin import theme, ui, llm, system_prompt, schema_converter, tool
+
+
+
+def execute_tool(console, name: str, tool_lookup, args: dict[str, Any]):
+    ui.print_tool_request(console, name, args)
+
+    # Find request function
+    tool_fn = tool_lookup.get(name)
+
+
+    if tool_fn is None:
+        error = f"Error: Unknown tool '{name}'"
+        ui.print_tool_error(console, error)
+        return error
+
+
+    try: 
+        result = tool_fn(**args)
+        ui.print_tool_result(console, name, result)
+        return str(result)
+
+    except  Exception as e:
+        error = f"Error executing tool '{name}': '{e}'"
+        ui.print_tool_error(console, error, name)
+        return error
+
+
+    
 
 def agent_loop(client: anthropic.Anthropic, console: Console) -> None:
     """Run the main agent loop: read input, call LLM, execute tools, repeat.
@@ -22,6 +48,12 @@ def agent_loop(client: anthropic.Anthropic, console: Console) -> None:
     conversation: list[dict[str, Any]] = []
 
     active_tools = [tool.read_file]
+    
+    tool_lookup = {
+        fn.__name__: fn
+        for fn in active_tools    
+    }
+    
     tool_schemas = schema_converter.generate_tool_schema(active_tools)
 
     while True:
@@ -60,10 +92,15 @@ def agent_loop(client: anthropic.Anthropic, console: Console) -> None:
                     output_tokens=llm_response.usage.output_tokens
                 )
             elif block.type == "tool_use":
-                print(
-                    f"Tool use request for tool: {block.name}"
-                    f"with args: {block.input}"
+                execute_tool(
+                    console, 
+                    block.name,
+                    block.input
                 )
+
+
+
+
 
 def main() -> None:
     """Entry point for the Alduin CLI agent.
