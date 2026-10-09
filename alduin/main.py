@@ -11,7 +11,7 @@ from alduin import theme, ui, llm, system_prompt, schema_converter, tool
 
 
 
-def execute_tool(console, name: str, tool_lookup, args: dict[str, Any]):
+def execute_tool(console, name: str, tool_lookup, args: dict[str, Any]) -> str:
     ui.print_tool_request(console, name, args)
 
     # Find request function
