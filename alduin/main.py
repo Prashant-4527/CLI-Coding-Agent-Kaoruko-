@@ -7,7 +7,7 @@ import anthropic
 import dotenv
 from rich.console import Console
 
-from alduin import theme, ui, llm, system_prompt, schema_converter, tool
+from alduin import llm, schema_converter, system_prompt, theme, tool, ui
 
 
 
@@ -92,11 +92,7 @@ def agent_loop(client: anthropic.Anthropic, console: Console) -> None:
                     output_tokens=llm_response.usage.output_tokens
                 )
             elif block.type == "tool_use":
-                execute_tool(
-                    console, 
-                    block.name,
-                    block.input
-                )
+                console.print(f"tool use requested: {block.name} {block.input}")
 
 
 
