@@ -9,6 +9,7 @@ from rich.console import Console
 
 from alduin import llm, schema_converter, system_prompt, theme, tool, ui
 
+MAX_TOOL_ROUNDS = 15
 
 
 def execute_tool(console, name: str, tool_lookup, args: dict[str, Any]) -> str:
@@ -72,31 +73,48 @@ def agent_loop(client: anthropic.Anthropic, console: Console) -> None:
         ui.clear_previous_line()
         ui.print_user_message(console, user_input)
 
-        llm_response = llm.call(
-            client=client,
-            console=console,
-            system_prompt=system_prompt.get(),    
-            messages=conversation,         
-            tool_schemas=tool_schemas,     
-        )
 
-        conversation.append({"role": "assistant", "content": llm_response.content})
-        
+        tool_rounds = 0
+        while True:
+            llm_response = llm.call(
+                client=client,
+                console=console,
+                system_prompt=system_prompt.get(),    
+                messages=conversation,         
+                tool_schemas=tool_schemas,     
+            )
 
-        for block in llm_response.content:
-            if block.type == "text":    
-                ui.print_assistant_reply(
-                    console=console,
-                    text=block.text,           
-                    input_tokens=llm_response.usage.input_tokens,
-                    output_tokens=llm_response.usage.output_tokens
-                )
-            elif block.type == "tool_use":
-                console.print(f"tool use requested: {block.name} {block.input}")
+            conversation.append({"role": "assistant", "content": llm_response.content})
+            
+            tool_results = []
+            for block in llm_response.content:
+                if block.type == "text":    
+                    ui.print_assistant_reply(
+                        console=console,
+                        text=block.text,           
+                        input_tokens=llm_response.usage.input_tokens,
+                        output_tokens=llm_response.usage.output_tokens
+                    )
+                elif block.type == "tool_use":
+                    result = execute_tool(console, block.name, tool_lookup, block.input)
+                    tool_results.append({
+                        "type": "tool_result",
+                        "tool_use_id": block.id,
+                        "content": result
+                    })
+
+            if not tool_results:
+                break
 
 
+            conversation.append({"role": "user", "content": tool_results})
 
 
+            tool_rounds+=1
+            if tool_rounds >= MAX_TOOL_ROUNDS:
+                ui.print_error(console, "Stopped: maximum tool rounds reached.")
+                conversation.append({"role": "assistant", "content": "Stopped: maximum tool rounds reached."})
+                break
 
 def main() -> None:
     """Entry point for the Alduin CLI agent.
