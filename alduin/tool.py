@@ -35,7 +35,32 @@ def edit_file(path: str, old_str: str, new_str: str) -> str:
         A success message, or an error message if it fails.
     """
 
-    pass
+    file_path = Path(path).resolve()
+
+    if not file_path.is_relative_to(Path.cwd()):
+        return "Error: path is outside the project foler"
+
+    if old_str == "":
+        if file_path.exists() and file_path.read_text(encoding="utf-8") != "":
+            return f"Error: {path} already exists and is not empty"
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        file_path.write_text(new_str, encoding="utf-8")
+        return f"Created {path}"
+
+
+    if not file_path.is_file():
+        return f"Error: file not found: {path}"
+
+    text = file_path.read_text(encoding="utf-8")
+    count = text.count(old_str)
+    if count == 0:
+        return "Error: old_str not found in the file"
+    if count > 1:
+        return f"Error: old_str appears {count} times; give a more unique string"
+
+
+    file_path.write_text(text.replace(old_str, new_str), encoding="utf-8")
+    return f"Edited {path}"
 
 
 def list_files(path: str) -> str:
