@@ -20,8 +20,6 @@ def read_file(path: str) -> str:
 
     return file_path.read_text(encoding="utf-8")
 
-    
-
 
 def edit_file(path: str, old_str: str, new_str: str) -> str:
     """Create or edit a file by replacing occurrences of a string.
