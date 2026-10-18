@@ -1,7 +1,37 @@
 """Module for tool implementations for the coding agent."""
-
+import subprocess
 from pathlib import Path
 
+
+def _shell_args(command: str) -> list[str]:
+    git_bash = Path(r"C:\Program Files\Git\bin\bash.exe")
+    if git_bash.exists():
+        return [str(git_bash), "-c", command]
+    return ["powershell", "-NoProfile", "-Command", command]
+
+
+
+def bash(command: str) -> str:
+
+    try:
+        completed = subprocess.run(
+            _shell_args(command),
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=30,
+            cwd=Path.cwd()
+        )
+
+    except subprocess.TimeoutExpired:
+        return "Error: command timed out after 30 seconds"
+
+
+    output = completed.stdout + completed.stderr
+    if len(output) > 10_000:
+        output = output[:10_000] + "\n... (output truncated)"
+    return f"exit code: {completed.returncode}\n{output}"
 
 def read_file(path: str) -> str:
     """Read the contents of a file.

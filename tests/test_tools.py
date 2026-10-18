@@ -21,3 +21,15 @@ def test_edit_needs_exactly_one_match(tmp_path, monkeypatch):
     assert tool.edit_file("a.txt", "z", "y").startswith("Error")
     assert tool.edit_file("a.txt", "x x", "y").startswith("Edited")
     assert (tmp_path / "a.txt").read_text(encoding="utf-8") == "y"
+
+
+
+
+def test_bash_echo():
+    result = tool.bash("echo hello")
+    assert result.startswith("exit code: 0")
+    assert "hello" in result
+
+
+def test_bash_exit_code():
+    assert tool.bash("exit 3").startswith("exit code: 3")

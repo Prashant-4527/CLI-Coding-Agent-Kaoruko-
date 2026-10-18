@@ -10,10 +10,13 @@ from rich.console import Console
 from alduin import llm, schema_converter, system_prompt, theme, tool, ui
 
 MAX_TOOL_ROUNDS = 15
-
+TOOLS_NEEDING_APPROVAL = {"bash"}
 
 def execute_tool(console, name: str, tool_lookup, args: dict[str, Any]) -> str:
     ui.print_tool_request(console, name, args)
+    if name in TOOLS_NEEDING_APPROVAL and not ui.confirm(console, args.get("command", "")):
+        message = "Error: the user denied this command"
+        ui.print_tool_error(console, name, message)
 
     # Find request function
     tool_fn = tool_lookup.get(name)
