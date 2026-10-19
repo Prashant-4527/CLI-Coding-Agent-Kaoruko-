@@ -6,11 +6,19 @@ from typing import Any
 import anthropic
 import dotenv
 from rich.console import Console
-
+from pathlib import Path
 from alduin import llm, schema_converter, system_prompt, theme, tool, ui
 
 MAX_TOOL_ROUNDS = 15
 TOOLS_NEEDING_APPROVAL = {"bash"}
+
+
+
+def load_agents_md() -> str:
+    agents_file = Path.cwd() / "AGENTS.md"
+    if not agents_file.is_file():
+        return ""
+    return agents_file.read_text(encoding="utf-8")
 
 def execute_tool(console, name: str, tool_lookup, args: dict[str, Any]) -> str:
     ui.print_tool_request(console, name, args)
@@ -53,6 +61,12 @@ def agent_loop(client: anthropic.Anthropic, console: Console) -> None:
 
     tool_schemas = schema_converter.generate_tool_schema(active_tools)
 
+    memory = load_agents_md()
+    full_prompt = system_prompt.get()
+    if memory: 
+        full_prompt += f"\n\n# Project instructions (AGENTS.md)\n{memory}"
+        ui.print_debug(console, f"Loaded AGENTS.md ({len(memory)} characters)")
+
     while True:
         try:
             user_input = input("🧑‍💻 You: ").strip()
@@ -74,7 +88,7 @@ def agent_loop(client: anthropic.Anthropic, console: Console) -> None:
             llm_response = llm.call(
                 client=client,
                 console=console,
-                system_prompt=system_prompt.get(),
+                system_prompt=full_prompt,
                 messages=conversation,
                 tool_schemas=tool_schemas,
             )
